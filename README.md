@@ -79,8 +79,7 @@ Descargalos directamente desde Kaggle antes de ejecutar los notebooks:
 
 | Dataset | Temporadas | Uso en el análisis | Link |
 |---|---|---|---|
-| Standard Stats histórico | 2000–2023 · múltiples ligas | Era clásica — Ast/90 por posición | [Kaggle] |
-(https://www.kaggle.com/datasets/beridzeg45/top-league-footballer-stats-2000-2023-seasons)
+| Standard Stats histórico | 2000–2023 · múltiples ligas | Era clásica — Ast/90 por posición | [Kaggle](https://www.kaggle.com/datasets/beridzeg45/top-league-footballer-stats-2000-2023-seasons) |
 | Top 5 Ligas Europeas 2017–2025 | 2017–2025 · 5 ligas | Era moderna — xAG/90 y arquetipos | [Kaggle](https://www.kaggle.com/datasets/emrey3lmaz/top-5-league-football-player-stats-2017-2025) |
 | FBref PL 2024-25 | 2024–25 · Premier League | Dataset moderno de referencia | [Kaggle](https://www.kaggle.com/datasets/siddhrajthakor/fbref-premier-league-202425-player-stats-dataset) |
 
