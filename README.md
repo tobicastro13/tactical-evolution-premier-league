@@ -1,4 +1,4 @@
-# ¿Murió el "10"? La evolución táctica del fútbol moderno con datos
+# La evolución táctica del fútbol moderno contada con datos — Premier League 2009–2025
 
 **Autor:** Tobias Castro — Business Intelligence & Analytics Consultant  
 **LinkedIn:** [Tobias Castro](https://www.linkedin.com/in/tobias-castro-6a79a0140/)  
@@ -127,7 +127,7 @@ El fútbol moderno no eliminó al creador. Lo distribuyó en todo el campo.
 
 El extremo invertido genera el doble de xAG/90 que el enganche clásico. El lateral ofensivo de élite llega a triplicarlo. Y el central constructor opera desde atrás con los mismos números que el "10" de hace 15 años.
 
-> *"El '10' no murió. Se fragmentó en tres arquetipos distintos."*
+> *"El '10', se fragmentó en tres arquetipos distintos."*
 
 ---
 
