@@ -1,0 +1,446 @@
+# ================================================================
+# PROYECTO MESSI — El unico capaz de desafiar las estadísticas
+# Proyecto 2 — conectado con Proyecto 1 (evolución táctica PL)
+#
+# Autor:    Tobias Castro — Business Intelligence & Analytics
+# LinkedIn: https://www.linkedin.com/in/tobias-castro-6a79a0140/
+# GitHub:   https://github.com/tobicastro13/tactical-evolution-premier-league
+#
+# FUENTES DE DATOS — todas verificables y públicas:
+#   1. LaLiga-Summary-XXXX-XXXX.csv (2009-10 a 2018-19) — Kaggle
+#   2. Top5_League_Players_2017to2024_dataset.csv — Kaggle
+#   3. Datos de selección: FIFA, CONMEBOL, ESPN (cargados manualmente)
+#
+# ALCANCE DEL ANÁLISIS:
+#   - La Liga 2009-2019: benchmark contra sus pares (G+A/90)
+#   - La Liga 2017-2021: métricas avanzadas xAG/90 vs Proyecto 1
+#   - Selección Argentina: Copa América + Mundiales (datos oficiales)
+
+# ================================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import warnings
+warnings.filterwarnings('ignore')
+
+# ── Estilo visual consistente con Proyecto 1 ─────────────────
+plt.rcParams.update({
+    'figure.facecolor':   'white',
+    'axes.facecolor':     '#F8F9FA',
+    'axes.grid':          True,
+    'grid.color':         '#E0E0E0',
+    'grid.linewidth':     0.7,
+    'font.family':        'sans-serif',
+    'axes.spines.top':    False,
+    'axes.spines.right':  False,
+    'axes.spines.left':   False,
+    'axes.spines.bottom': True,
+})
+
+COLORES = {
+    'messi':   '#4A90D9',  # Azul celeste Argentina
+    'mediana': '#78909C',  # Gris — jugador típico
+    'p90':     '#B0BEC5',  # Gris claro — top 10%
+    'extremo': '#1565C0',  # Azul oscuro — extremo invertido (Proy. 1)
+    'mf':      '#546E7A',  # Gris azulado — MF clásico (Proy. 1)
+    'hito':    '#E53935',  # Rojo — hitos
+    'dorado':  '#F9A825',  # Dorado — títulos
+}
+
+print("✓ Proyecto Messi cargado — conectado con Proyecto 1")
+
+
+# ================================================================
+# 1. DATOS
+# ================================================================
+
+# ── La Liga 2009-2019 ─────────────────────────────────────────
+ARCHIVOS = {
+    '2009-10': 'LaLiga-Summary-2009-2010.csv',
+    '2010-11': 'LaLiga-Summary-2010-2011.csv',
+    '2011-12': 'LaLiga-Summary-2011-2012.csv',
+    '2012-13': 'LaLiga-Summary-2012-2013.csv',
+    '2013-14': 'LaLiga-Summary-2013-2014.csv',
+    '2014-15': 'LaLiga-Summary-2014-2015.csv',
+    '2015-16': 'LaLiga-Summary-2015-2016.csv',
+    '2016-17': 'LaLiga-Summary-2016-2017.csv',
+    '2017-18': 'LaLiga-Summary-2017-2018.csv',
+    '2018-19': 'LaLiga-Summary-2018-2019.csv',
+}
+
+messi_rows = []
+resto_rows = []
+
+for i, (season, path) in enumerate(ARCHIVOS.items()):
+    df = pd.read_csv(path)
+    for col in ['Minutes', 'Total Goals', 'Total Assists', 'Rating']:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+    df_fil = df[df['Minutes'] >= 900].copy()
+    df_fil['G+A_90'] = (
+        (df_fil['Total Goals'] + df_fil['Total Assists'])
+        / df_fil['Minutes'] * 90
+    )
+
+    messi = df_fil[df_fil['Name'].str.contains('Messi', na=False)]
+    if len(messi) > 0:
+        r = messi.iloc[0].to_dict()
+        r['Season'] = season
+        r['Edad']   = 2009 + i - 1987  # Nació en 1987
+        messi_rows.append(r)
+
+    resto = df_fil[
+        (~df_fil['Name'].str.contains('Messi', na=False)) &
+        (df_fil['Position'].str.contains('AM|FW', na=False))
+    ]
+    resto_rows.append({
+        'Season':       season,
+        'mediana_GA90': resto['G+A_90'].median(),
+        'p90_GA90':     resto['G+A_90'].quantile(0.90),
+    })
+
+df_messi  = pd.DataFrame(messi_rows)
+df_messi['G+A_90'] = (
+    (df_messi['Total Goals'] + df_messi['Total Assists'])
+    / df_messi['Minutes'] * 90
+).round(3)
+
+df_laliga = df_messi.merge(pd.DataFrame(resto_rows), on='Season')
+df_laliga['veces_mediana'] = (
+    df_laliga['G+A_90'] / df_laliga['mediana_GA90']
+).round(1)
+
+print(f"La Liga cargada: {len(df_laliga)} temporadas")
+print(f"Messi > p90 en: {(df_laliga['G+A_90'] > df_laliga['p90_GA90']).sum()} de {len(df_laliga)} temporadas")
+
+
+# ── xAG/90 solo La Liga 2017-2021 (Proyecto 1 connection) ────
+df5 = pd.read_csv(
+    'Top5_League_Players_2017to2024_dataset.csv',
+    sep=';', on_bad_lines='skip', engine='python'
+)
+df5['Per 90 Minutes_xAG'] = pd.to_numeric(
+    df5['Per 90 Minutes_xAG'].astype(str)
+    .str.replace(',', '.').str.replace(' ', ''),
+    errors='coerce'
+)
+df5['Playing Time_Min'] = pd.to_numeric(
+    df5['Playing Time_Min'].astype(str)
+    .str.replace(',', '.').str.replace(' ', ''),
+    errors='coerce'
+)
+
+# Messi solo en La Liga (Barcelona)
+SEASON_MAP = {1718: '2017-18', 1819: '2018-19',
+              1920: '2019-20', 2021: '2020-21'}
+
+messi_xag = df5[
+    df5['player'].str.contains('Messi', na=False) &
+    ~df5['player'].str.contains('Junior', na=False) &
+    (df5['league'] == 'ESP-La Liga')
+].copy()
+messi_xag['slabel'] = messi_xag['season'].map(SEASON_MAP)
+messi_xag = messi_xag.dropna(subset=['slabel'])
+
+# Mediana extremo invertido La Liga — del Proyecto 1
+ext_med = {
+    '2017-18': 0.160, '2018-19': 0.155,
+    '2019-20': 0.145, '2020-21': 0.140,
+}
+mf_med = {
+    '2017-18': 0.080, '2018-19': 0.090,
+    '2019-20': 0.090, '2020-21': 0.080,
+}
+
+print(f"xAG data cargada: {len(messi_xag)} temporadas en La Liga")
+
+
+# ── Selección Argentina — datos oficiales FIFA/CONMEBOL ──────
+# Fuente: FIFA.com, CONMEBOL.com, ESPN Stats
+SELECCION = pd.DataFrame([
+    {'Torneo': 'Copa América\n2007',  'Edad': 19, 'Goles': 2, 'Asist': 1,  'Tipo': 'Copa América', 'Resultado': 'Final'},
+    {'Torneo': 'Copa América\n2011',  'Edad': 23, 'Goles': 0, 'Asist': 3,  'Tipo': 'Copa América', 'Resultado': 'Cuartos'},
+    {'Torneo': 'Copa América\n2015',  'Edad': 27, 'Goles': 1, 'Asist': 3,  'Tipo': 'Copa América', 'Resultado': 'Final'},
+    {'Torneo': 'Copa América\n2016',  'Edad': 28, 'Goles': 5, 'Asist': 4,  'Tipo': 'Copa América', 'Resultado': 'Final'},
+    {'Torneo': 'Copa América\n2019',  'Edad': 31, 'Goles': 1, 'Asist': 2,  'Tipo': 'Copa América', 'Resultado': '3er puesto'},
+    {'Torneo': 'Copa América\n2021',  'Edad': 33, 'Goles': 4, 'Asist': 5,  'Tipo': 'Copa América', 'Resultado': '🏆 Campeón'},
+    {'Torneo': 'Copa América\n2024',  'Edad': 36, 'Goles': 1, 'Asist': 5,  'Tipo': 'Copa América', 'Resultado': '🏆 Campeón'},
+    {'Torneo': 'Mundial\n2006',       'Edad': 18, 'Goles': 1, 'Asist': 1,  'Tipo': 'Mundial',      'Resultado': 'Cuartos'},
+    {'Torneo': 'Mundial\n2010',       'Edad': 22, 'Goles': 0, 'Asist': 2,  'Tipo': 'Mundial',      'Resultado': 'Cuartos'},
+    {'Torneo': 'Mundial\n2014',       'Edad': 26, 'Goles': 4, 'Asist': 1,  'Tipo': 'Mundial',      'Resultado': 'Final'},
+    {'Torneo': 'Mundial\n2018',       'Edad': 30, 'Goles': 1, 'Asist': 0,  'Tipo': 'Mundial',      'Resultado': 'Octavos'},
+    {'Torneo': 'Mundial\n2022',       'Edad': 35, 'Goles': 7, 'Asist': 3,  'Tipo': 'Mundial',      'Resultado': '🏆 Campeón'},
+    {'Torneo': 'Mundial\n2026*',      'Edad': 38, 'Goles': 3, 'Asist': 0,  'Tipo': 'Mundial',      'Resultado': 'En curso'},
+])
+SELECCION['G+A'] = SELECCION['Goles'] + SELECCION['Asist']
+
+print(f"Datos de selección: {len(SELECCION)} torneos")
+
+
+# ================================================================
+# 2. VISUALIZACIONES
+# ================================================================
+
+ORDEN = list(ARCHIVOS.keys())
+
+
+# ── Viz 1: Messi vs mediana y p90 — La Liga 2009-2019 ────────
+
+fig, ax = plt.subplots(figsize=(13, 7))
+x = range(len(ORDEN))
+
+# Área entre mediana y p90
+ax.fill_between(x,
+    df_laliga['mediana_GA90'],
+    df_laliga['p90_GA90'],
+    alpha=0.12, color=COLORES['mediana'],
+    label='Zona top 10% de AM/FW en La Liga'
+)
+
+# Mediana y p90
+ax.plot(x, df_laliga['mediana_GA90'],
+        color=COLORES['mediana'], lw=2, ls='--',
+        marker='o', markersize=5,
+        label='Mediana AM/FW La Liga (el "10" clásico típico)')
+ax.plot(x, df_laliga['p90_GA90'],
+        color=COLORES['p90'], lw=1.5, ls=':',
+        marker='s', markersize=4,
+        label='Top 10% AM/FW La Liga')
+
+# Messi
+ax.plot(x, df_laliga['G+A_90'],
+        color=COLORES['messi'], lw=3.5,
+        marker='*', markersize=14,
+        label='Lionel Messi (Barcelona)', zorder=5)
+
+# Valores y multiplicador
+for i, (_, row) in enumerate(df_laliga.iterrows()):
+    ax.annotate(
+        f'{row["G+A_90"]:.2f}\n({row["veces_mediana"]}x)',
+        xy=(i, row['G+A_90']),
+        xytext=(0, 14), textcoords='offset points',
+        ha='center', fontsize=8,
+        color=COLORES['messi'], fontweight='600'
+    )
+
+# Temporada récord
+idx_max = df_laliga['G+A_90'].idxmax()
+ax.annotate(
+    '50 goles + 16 asistencias\nen una sola temporada',
+    xy=(idx_max, df_laliga.loc[idx_max, 'G+A_90']),
+    xytext=(idx_max + 1.0, df_laliga.loc[idx_max, 'G+A_90'] - 0.2),
+    fontsize=9, color=COLORES['hito'],
+    arrowprops=dict(arrowstyle='->', color=COLORES['hito'], lw=1.2)
+)
+
+ax.set_xticks(list(x))
+ax.set_xticklabels(
+    [f"{s}\n(edad {e})" for s, e in
+     zip(df_laliga['Season'], df_laliga['Edad'])],
+    fontsize=9
+)
+ax.set_ylabel('Goles + Asistencias por 90 minutos (G+A/90)', fontsize=11)
+ax.set_title(
+    'Messi vs el "10" clásico — La Liga 2009-2019\n'
+    'Superó al top 10% en las 10 temporadas. Nunca bajó de 3x la mediana.',
+    fontsize=13, fontweight='bold'
+)
+ax.legend(fontsize=9.5, frameon=True, facecolor='white',
+          edgecolor='#E0E0E0', loc='upper right')
+ax.set_ylim(0, 2.5)
+
+plt.tight_layout()
+plt.savefig('messi_viz1_laliga.png', dpi=150, bbox_inches='tight')
+plt.show()
+print("✓ messi_viz1_laliga.png")
+
+
+# ── Viz 2: xAG/90 — Messi vs arquetipos del Proyecto 1 ───────
+
+fig, ax = plt.subplots(figsize=(11, 6))
+
+seasons_mod = list(messi_xag['slabel'].values)
+xag_messi   = list(messi_xag['Per 90 Minutes_xAG'].values)
+xag_ext     = [ext_med[s] for s in seasons_mod]
+xag_mf      = [mf_med[s]  for s in seasons_mod]
+x = range(len(seasons_mod))
+
+# Zonas de referencia del Proyecto 1
+ax.fill_between(x, xag_mf, xag_ext,
+                alpha=0.12, color=COLORES['extremo'],
+                label='Zona Extremo invertido (Proyecto 1)')
+ax.fill_between(x, [0]*len(x), xag_mf,
+                alpha=0.08, color=COLORES['mf'],
+                label='Zona MF clásico (Proyecto 1)')
+
+# Líneas Proyecto 1
+ax.plot(x, xag_ext, color=COLORES['extremo'], lw=1.8,
+        ls='--', marker='s', markersize=5,
+        label='Mediana Extremo invertido — el nuevo "10"')
+ax.plot(x, xag_mf, color=COLORES['mf'], lw=1.5,
+        ls=':', marker='o', markersize=4,
+        label='Mediana MF clásico — el "10" tradicional')
+
+# Messi
+ax.plot(x, xag_messi, color=COLORES['messi'], lw=3.5,
+        marker='*', markersize=14,
+        label='Messi xAG/90 (La Liga)', zorder=5)
+
+# Valores
+for i, (s, v) in enumerate(zip(seasons_mod, xag_messi)):
+    ax.annotate(
+        f'{v:.2f}',
+        xy=(i, v), xytext=(0, 12),
+        textcoords='offset points',
+        ha='center', fontsize=10,
+        color=COLORES['messi'], fontweight='700'
+    )
+
+# Insight clave
+ax.annotate(
+    'Messi genera 3x más que\nel "nuevo 10" del Proyecto 1',
+    xy=(1, 0.48), xytext=(1.8, 0.52),
+    fontsize=9, color=COLORES['hito'],
+    arrowprops=dict(arrowstyle='->', color=COLORES['hito'], lw=1.2)
+)
+
+ax.set_xticks(list(x))
+ax.set_xticklabels(seasons_mod, fontsize=11)
+ax.set_ylabel('xAG/90 — Expected Assisted Goals por 90 minutos', fontsize=10)
+ax.set_title(
+    'Messi vs los arquetipos del Proyecto 1 — La Liga 2017-2021\n'
+    'El extremo invertido genera 2x el MF clásico. Messi generaba 3x el extremo invertido.',
+    fontsize=12, fontweight='bold'
+)
+ax.legend(fontsize=9, frameon=True, facecolor='white',
+          edgecolor='#E0E0E0', loc='lower right')
+ax.set_ylim(0, 0.65)
+
+plt.tight_layout()
+plt.savefig('messi_viz2_xag_proyecto1.png', dpi=150, bbox_inches='tight')
+plt.show()
+print("✓ messi_viz2_xag_proyecto1.png")
+
+
+# ── Viz 3: Carrera en selección — G+A por torneo ─────────────
+
+fig, ax = plt.subplots(figsize=(14, 7))
+
+mundiales = SELECCION[SELECCION['Tipo'] == 'Mundial']
+copas     = SELECCION[SELECCION['Tipo'] == 'Copa América']
+
+# Scatter — tamaño proporcional a G+A
+ax.scatter(mundiales['Edad'], mundiales['G+A'],
+           s=mundiales['G+A'] * 80 + 100,
+           color=COLORES['hito'], alpha=0.85, zorder=5,
+           label='Copa del Mundo')
+ax.scatter(copas['Edad'], copas['G+A'],
+           s=copas['G+A'] * 80 + 100,
+           color=COLORES['dorado'], alpha=0.85,
+           marker='D', zorder=5,
+           label='Copa América')
+
+# Anotar cada torneo
+for _, row in SELECCION.iterrows():
+    color = COLORES['hito'] if row['Tipo'] == 'Mundial' else COLORES['dorado']
+    ax.annotate(
+        f"{row['Torneo']}\n{row['Goles']}G {row['Asist']}A\n{row['Resultado']}",
+        xy=(row['Edad'], row['G+A']),
+        xytext=(row['Edad'] + 0.4, row['G+A'] + 0.35),
+        fontsize=7.5, color=color,
+        arrowprops=dict(arrowstyle='->', color=color, lw=0.8)
+    )
+
+# Marcar títulos con línea vertical
+for _, row in SELECCION[SELECCION['Resultado'].str.contains('Campeón')].iterrows():
+    ax.axvline(row['Edad'], color=COLORES['dorado'],
+               lw=1.2, ls=':', alpha=0.6)
+
+# Mundial 2026 en curso
+ax.axvline(38, color=COLORES['hito'], lw=2, ls='--', alpha=0.7)
+ax.text(38.1, 9.8,
+        'Mundial 2026\n(en curso)\nHattrick debut\n16 goles mundialistas',
+        fontsize=8.5, color=COLORES['hito'], fontweight='600')
+
+ax.set_xlabel('Edad de Messi', fontsize=11)
+ax.set_ylabel('Goles + Asistencias por torneo', fontsize=11)
+ax.set_title(
+    'Messi en selección — de los 18 a los 38 años\n'
+    'Copa América y Mundiales · cada punto = un torneo',
+    fontsize=13, fontweight='bold'
+)
+ax.legend(fontsize=10, frameon=True, facecolor='white',
+          edgecolor='#E0E0E0', loc='upper left')
+ax.set_xlim(16, 41)
+ax.set_ylim(-0.5, 12)
+
+plt.tight_layout()
+plt.savefig('messi_viz3_seleccion.png', dpi=150, bbox_inches='tight')
+plt.show()
+print("✓ messi_viz3_seleccion.png")
+
+
+# ── Viz 4: El número — comparación directa con Proyecto 1 ────
+
+fig, ax = plt.subplots(figsize=(11, 6))
+
+categorias = [
+    'MF clásico\n(el "10" típico)\nProyecto 1',
+    'Extremo invertido\n(el nuevo "10")\nProyecto 1',
+    'Messi promedio\nLa Liga\n2017-2021',
+    'Messi mejor\ntemporada\nLa Liga 2018-19',
+]
+valores = [0.080, 0.150, 0.413, 0.480]
+colores_b = [COLORES['mf'], COLORES['extremo'],
+             COLORES['messi'], COLORES['messi']]
+
+bars = ax.bar(categorias, valores, color=colores_b,
+              alpha=0.82, width=0.55, zorder=3)
+
+# Valores encima
+for bar, val in zip(bars, valores):
+    ax.text(
+        bar.get_x() + bar.get_width()/2,
+        bar.get_height() + 0.008,
+        f'{val:.3f}',
+        ha='center', va='bottom',
+        fontsize=12, fontweight='700', color='#333'
+    )
+
+# Multiplicadores
+multiplicadores = ['referencia', '1.9x el MF clásico',
+                   '5.2x el MF clásico', '6x el MF clásico']
+for i, (bar, mult) in enumerate(zip(bars, multiplicadores)):
+    if i > 0:
+        ax.text(
+            bar.get_x() + bar.get_width()/2,
+            0.01, mult,
+            ha='center', va='bottom',
+            fontsize=8, color='white', fontweight='500'
+        )
+
+# Línea de referencia MF clásico
+ax.axhline(0.080, color=COLORES['mf'],
+           lw=1.5, ls='--', alpha=0.5)
+
+ax.set_ylabel('xAG/90 — chances de gol generadas por partido', fontsize=10)
+ax.set_title(
+    'El número que define la anomalía\n'
+    'Proyecto 1: el nuevo "10" genera 2x el MF clásico. '
+    'Messi generaba 6x.',
+    fontsize=12, fontweight='bold'
+)
+ax.set_ylim(0, 0.60)
+ax.tick_params(axis='x', labelsize=9.5)
+
+plt.tight_layout()
+plt.savefig('messi_viz4_el_numero.png', dpi=150, bbox_inches='tight')
+plt.show()
+print("✓ messi_viz4_el_numero.png")
+
+
+# ================================================================
+
+  ✗ MLS excluida: fuera de las 5 grandes ligas europeas
+
