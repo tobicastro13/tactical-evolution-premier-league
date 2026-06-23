@@ -13,7 +13,7 @@
 | # | Proyecto | Pregunta central | Stack |
 |---|---|---|---|
 | 01 | [¿Qué pasó con el jugador más importante?](#proyecto-1) | ¿Se fragmentó el rol del "10" clásico? | Python · pandas · matplotlib |
-| 02 | [La anomalía que los datos no explican](#proyecto-2) | ¿Cómo se explica Messi con datos? | Python · pandas · matplotlib |
+| 02 | [El único capaz de desafiar la estadística](#proyecto-2) | ¿Cómo se explica Messi con datos? | Python · pandas · matplotlib |
 
 ---
 
@@ -153,7 +153,7 @@ El extremo invertido genera el doble de xAG/90 que el enganche clásico. El late
 ---
 
 <a name="proyecto-2"></a>
-## 🌟 Proyecto 2 — La anomalía que los datos no pueden explicar
+## 🌟 Proyecto 2 — El único capaz de desafiar la estadística
 ### Messi con datos · La Liga 2009-2019 + Selección Argentina 2006-2026
 
 **Autor:** Tobias Castro — Business Intelligence & Analytics Consultant  
