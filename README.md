@@ -283,7 +283,7 @@ El Proyecto 1 mostró que el pressing moderno mató al enganche estático.
 
 Messi jugó 20 años en ese mismo fútbol. Nunca bajó del top 10% de La Liga. Generaba 6 veces más chances de gol que el mediocampista clásico típico.
 
-> *"Los datos no explican a Messi. Solo confirman que es una anomalía."*
+> *"Los datos no explican a Messi. Solo confirman que es u CRACK."*
 
 ---
 
