@@ -165,7 +165,7 @@ El extremo invertido genera el doble de xAG/90 que el enganche clásico. El late
 
 ## La pregunta
 
-¿Cómo se explica con datos que Messi haga un hattrick en un Mundial a los 38 años?
+¿Cómo se explica a Messi como un fuera de serie?
 
 ---
 
@@ -174,8 +174,6 @@ El extremo invertido genera el doble de xAG/90 que el enganche clásico. El late
 El Proyecto 1 mostró que el pressing moderno redujo el tiempo de decisión a menos de 1 segundo y fragmentó el rol del enganche clásico en tres arquetipos distintos.
 
 Este proyecto analiza al único jugador que desafió esa lógica durante 20 años.
-
-**Respuesta:** No se explica. Los datos solo confirman la magnitud de la anomalía.
 
 ---
 
@@ -188,9 +186,9 @@ Este proyecto analiza al único jugador que desafió esa lógica durante 20 año
 | xAG/90 pico (2018-19) | **0.480** | 3x el extremo invertido del Proyecto 1 |
 | xAG/90 promedio (2017-21) | **0.413** | 6x el MF clásico típico |
 | Copa América | **14G + 17A** en 7 torneos | Máximo asistidor histórico CONMEBOL |
-| Mundiales | **16 goles** en 6 mundiales* | Máximo goleador histórico FIFA |
+| Mundiales | **18 goles** en 6 mundiales* | Máximo goleador histórico FIFA |
 
-*incluyendo Mundial 2026 en curso
+*incluyendo Mundial 2026 en curso al 23/6/2026
 
 > **G+A/90:** goles más asistencias por 90 minutos. Métrica de producción ofensiva total comparable entre temporadas y ligas.
 
